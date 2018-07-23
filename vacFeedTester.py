@@ -350,6 +350,7 @@ def parse_args(args):
     parser.add_argument('-cl', dest='contLoad', help='Run Continuity and Load test', action="store_true")
     parser.add_argument('-hp', dest='hiPot', help='Run Hi-Pot test', action="store_true")
     parser.add_argument('-n', dest='name', help='Append a name to the report files')
+    parser.add_argument('-ip', dest='ip', help='Keithley IP address')
 
     parsed_args, _unknown_args = parser.parse_known_args(args)
 
@@ -360,8 +361,14 @@ if __name__ == "__main__":
     args = parse_args(sys.argv)
 
     try:
+        ip = "134.79.217.93"
+        ip = "dmm-b084-test1"
+        if args.ip is not None:
+            ip = args.ip
+
+
         readCsv("channel_mapping.csv")
-        connect("134.79.217.93")
+        connect(ip)
         preConfiguration()
         global name
         name = ''

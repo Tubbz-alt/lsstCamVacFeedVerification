@@ -15,3 +15,4 @@ optional arguments:
   -cl         Run Continuity and Load test
   -hp         Run Hi-Pot test
   -n NAME     Append a name to the report files
+  -ip IP      Keithley IP address
