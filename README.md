@@ -9,8 +9,8 @@ Tests reports are generated in the reports directory.
 
 # Requirements
 
--Python >3.6
--python-vxi11
+- Python >3.6
+- python-vxi11
 
 
 # Usage
