@@ -7,6 +7,13 @@ Module on slot 2 must be connected to Test Board 2 (44 pins connectors)
 
 Tests reports are generated in the reports directory.
 
+# Requirements
+
+-Python >3.6
+-python-vxi11
+
+
+# Usage
 
 usage: vacFeedTester.py [-h] [-cl] [-hp] [-n NAME]
 
