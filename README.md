@@ -15,6 +15,7 @@ Tests reports are generated in the reports directory.
 
 # Usage
 
+```
 usage: vacFeedTester.py [-h] [-cl] [-hp] [-n NAME]
 
 optional arguments:
@@ -23,3 +24,4 @@ optional arguments:
   -hp         Run Hi-Pot test
   -n NAME     Append a name to the report files
   -ip IP      Keithley IP address
+  ```
