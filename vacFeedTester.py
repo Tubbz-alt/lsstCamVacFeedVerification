@@ -6,6 +6,12 @@ import argparse
 import sys
 import os
 
+v250 = 30
+v5 = 5
+v0 = 0
+vHalf = 1.66
+
+
 
 def preConfiguration():
     # Module 1 - 37 pins module
@@ -23,7 +29,7 @@ def preConfiguration():
     # Configure DMM
     instr.write('dmm.connect = dmm.CONNECT_TWO_WIRE')
     instr.write('dmm.autodelay = dmm.AUTODELAY_ONCE')
-    instr.write('dmm.filter.count = 5')
+    instr.write('dmm.filter.count = 3')
     instr.write('dmm.filter.type = dmm.FILTER_REPEAT_AVG')
     instr.write('dmm.filter.enable = dmm.ON')
 
@@ -32,7 +38,7 @@ def preConfiguration():
     if not os.path.exists('reports'):
         os.makedirs('reports')
 
-    instr.write('beeper.enable = 0')
+    instr.write('beeper.enable = 1')
 
 
 def continuityLoadTest():
@@ -74,8 +80,8 @@ def continuityLoadTest():
             # Test wire A
             wireValid = True
             chClose(2, pin44)
-            valid1, voltage1, expected1 = read(1, 0)
-            valid2, voltage2, expected2 = read(2, 5)
+            valid1, voltage1, expected1 = read(1, v0)
+            valid2, voltage2, expected2 = read(2, v5)
             valid = 'Error'
             if (valid1 and valid2): valid = 'OK'
             s2 = f"    -- {pin44:02d}H {valid} {voltage1:.2f}|{voltage2:.2f} v      ({expected1:.2f}|{expected2:.2f})v"
@@ -84,8 +90,8 @@ def continuityLoadTest():
             wireValid &= valid1 and valid2
 
             chClose(1, pin37A)
-            valid1, voltage1, expected1 = read(1, 1.66)
-            valid2, voltage2, expected2 = read(2, 1.66)
+            valid1, voltage1, expected1 = read(1, vHalf,0.40)
+            valid2, voltage2, expected2 = read(2, vHalf,0.40)
             valid = 'Error'
             if (valid1 and valid2): valid = 'OK'
             s2 = f"{pin37A:02d}H -- {pin44:02d}H {valid} {voltage1:.2f}|{voltage2:.2f} v      ({expected1:.2f}|{expected2:.2f})v"
@@ -98,11 +104,12 @@ def continuityLoadTest():
                 goodWires.append([pin37A, pin44])
             else:
                 badWires.append([pin37A, pin44])
+                errorBeep()
 
             # Test wire B
             wireValid = True
-            valid1, voltage1, expected1 = read(1, 0)
-            valid2, voltage2, expected2 = read(2, 5)
+            valid1, voltage1, expected1 = read(1, v0)
+            valid2, voltage2, expected2 = read(2, v5)
             valid = 'Error'
             if (valid1 and valid2): valid = 'OK'
             s2 = f"    -- {pin44:02d}H {valid} {voltage1:.2f}|{voltage2:.2f} v      ({expected1:.2f}|{expected2:.2f})v"
@@ -111,8 +118,8 @@ def continuityLoadTest():
             wireValid &= valid1 and valid2
 
             chClose(1, pin37B)
-            valid1, voltage1, expected1 = read(1, 1.66)
-            valid2, voltage2, expected2 = read(2, 1.66)
+            valid1, voltage1, expected1 = read(1, vHalf,0.4)
+            valid2, voltage2, expected2 = read(2, vHalf,0.4)
             valid = 'Error'
             if (valid1 and valid2): valid = 'OK'
             s2 = f"{pin37B:02d}H -- {pin44:02d}H {valid} {voltage1:.2f}|{voltage2:.2f} v      ({expected1:.2f}|{expected2:.2f})v"
@@ -136,7 +143,7 @@ def continuityLoadTest():
             errorBeep()
             errorBeep()
             fileWrite(file, "\n---> Hi-Pot Test FAILED!\n\n")
-            fileWrite(file, f"{len(goodWires)} of {len(channelTable)*2} wires passed the Hi-Pot Test\n")
+            fileWrite(file, f"{len(goodWires)} of {len(channelTable)*2} wires passed the Continuity and Load Test\n")
             fileWrite(file, f"These wires failed:\n\n")
             fileWrite(file, f"pin37\t\tpin47\n")
             fileWrite(file, f"-----\t\t-----\n")
@@ -146,7 +153,9 @@ def continuityLoadTest():
             show("Cont. Load PASSED!", f"{len(goodWires)} of {len(channelTable)*2} wires are good")
             successBeep()
             fileWrite(file, "\n---> Hi-Pot Test PASSED!\n\n")
-            fileWrite(file, f"{len(goodWires)} of {len(channelTable)*2} wires passed the Hi-Pot Test\n")
+            fileWrite(file, f"{len(goodWires)} of {len(channelTable)*2} wires passed the Continuity and Load Test\n")
+
+        fileWrite(file, "\n\n")
 
 
 def hiPotTest():
@@ -167,10 +176,16 @@ def hiPotTest():
         chClose(1, 90)
         # GND to LO on 37 pin module
         chClose(1, 93)
-        # 5V to HI on 44 pin module
+        # 250V to HI on 44 pin module
         chClose(2, 91)
         # GND to LO on 44 pin module
         chClose(2, 93)
+
+        refVoltage = read(2)
+
+        print(refVoltage)
+        v250=refVoltage
+
 
         goodWires = []
         badWires = []
@@ -199,11 +214,14 @@ def hiPotTest():
             # Close the 44 pins channel
             chClose(2, pin44)
 
-            valid1, voltage1, expected1 = read(1, 0)
-            valid2, voltage2, expected2 = read(2, 250)
+            valid1, voltage1, expected1 = read(1, v0)
+            valid2, voltage2, expected2 = read(2, v250)
+
+            current = abs(v250 - voltage2) / 10000
+
             valid = 'Error'
             if (valid1 and valid2): valid = 'OK'
-            s2 = f"{pin37A:02d}H,{pin37B:02d}H -/- {pin44:02d}H {valid} {voltage1:.1f}|{voltage2:.1f} v      ({expected1:.1f}|{expected2:.1f})v"
+            s2 = f"{pin37A:02d}H,{pin37B:02d}H -/- {pin44:02d}H {valid} {voltage1:.1f}|{voltage2:.1f} v      ({expected1:.1f}|{expected2:.1f})v   {current*1000:.4f} mA crosstalk"
             fileWrite(file, s2 + "\n")
             show(s1, s2)
 
@@ -234,6 +252,8 @@ def hiPotTest():
             successBeep()
             fileWrite(file, "\n---> Hi-Pot Test PASSED!\n\n")
             fileWrite(file, f"{len(goodWires)} of {len(channelTable)} pairs of wires passed the Hi-Pot Test\n")
+
+        fileWrite(file, "\n\n")
 
 
 # Util functions
@@ -269,15 +289,23 @@ def read(slot, expected=None, tolerance=0.05):
     # expected = 0
     # tolerance = 1
 
+
     chClose(slot, 911)
+
+    import time
+    time.sleep(0.2)
+
     read = (instr.ask('print(dmm.measure())'))
     # instr.write("beeper.beep(0.1, 2400)")
     value = float(read)
     checkError()
     chOpen(slot, 911)
-    valid = abs(expected - value) < tolerance
-    return (valid, value, expected)
-    return (valid, value, expected, value - expected)
+
+    if expected is not None:
+        valid = abs(expected - value) < tolerance
+        return (valid, value, expected)
+
+    return value
 
 
 def printClosed():
