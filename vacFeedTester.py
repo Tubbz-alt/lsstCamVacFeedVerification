@@ -142,7 +142,7 @@ def continuityLoadTest():
             show("$BCont. Load FAILED!", f"$B{len(badWires)} of {len(channelTable)*2} wires are bad")
             errorBeep()
             errorBeep()
-            fileWrite(file, "\n---> Hi-Pot Test FAILED!\n\n")
+            fileWrite(file, "\n---> Continuity and Load Test FAILED!\n\n")
             fileWrite(file, f"{len(goodWires)} of {len(channelTable)*2} wires passed the Continuity and Load Test\n")
             fileWrite(file, f"These wires failed:\n\n")
             fileWrite(file, f"pin37\t\tpin47\n")
@@ -152,7 +152,7 @@ def continuityLoadTest():
         else:
             show("Cont. Load PASSED!", f"{len(goodWires)} of {len(channelTable)*2} wires are good")
             successBeep()
-            fileWrite(file, "\n---> Hi-Pot Test PASSED!\n\n")
+            fileWrite(file, "\n---> Continuity and Load Test PASSED!\n\n")
             fileWrite(file, f"{len(goodWires)} of {len(channelTable)*2} wires passed the Continuity and Load Test\n")
 
         fileWrite(file, "\n\n")
@@ -171,20 +171,31 @@ def hiPotTest():
         instr.write('dmm.func = "dcvolts"')
         instr.write('dmm.range = 260')
 
+        Rtest = 100000
+
+        # 250V to HI on 44 pin module
+        chClose(2, 90)
+        # GND to LO on 44 pin module
+        chClose(2, 93)
+        import time
+        time.sleep(1)
+        v250 = read(2)
+        # 250V to HI on 44 pin module
+        chOpen(2, 90)
+
+
         # Setup common voltages
+        chClose(2, 91)
+        # GND to LO on 44 pin module
+        chClose(2, 93)
+        Vdmm = read(2)
+        Rdmm = -(Rtest * Vdmm) / ( Vdmm - v250)
+
         # GND to HI on 37 pin module
         chClose(1, 90)
         # GND to LO on 37 pin module
         chClose(1, 93)
         # 250V to HI on 44 pin module
-        chClose(2, 91)
-        # GND to LO on 44 pin module
-        chClose(2, 93)
-
-        refVoltage = read(2)
-
-        print(refVoltage)
-        v250=refVoltage
 
 
         goodWires = []
@@ -217,11 +228,18 @@ def hiPotTest():
             valid1, voltage1, expected1 = read(1, v0)
             valid2, voltage2, expected2 = read(2, v250)
 
-            current = abs(v250 - voltage2) / 10000
+            R = -(Rtest * voltage2) / (voltage2 - v250)
+            r = - (R * Rdmm) / ( R - Rdmm  )
+
+
+            print(v250,Vdmm,voltage2)
+            print(Rdmm,R,r)
+            print(voltage2/Rdmm*1000,voltage2/r*1000,voltage2/Rdmm*1000+voltage2/r*1000, (v250-voltage2)/Rtest*1000)
+
 
             valid = 'Error'
             if (valid1 and valid2): valid = 'OK'
-            s2 = f"{pin37A:02d}H,{pin37B:02d}H -/- {pin44:02d}H {valid} {voltage1:.1f}|{voltage2:.1f} v      ({expected1:.1f}|{expected2:.1f})v   {current*1000:.4f} mA crosstalk"
+            s2 = f"{pin37A:02d}H,{pin37B:02d}H -/- {pin44:02d}H {valid} {voltage1:.1f}|{voltage2:.1f} v      ({expected1:.1f}|{expected2:.1f})v   {r/1000000:.2f} Mohm {voltage2/r*1000000:.4f} uA leakage"
             fileWrite(file, s2 + "\n")
             show(s1, s2)
 
@@ -293,7 +311,7 @@ def read(slot, expected=None, tolerance=0.05):
     chClose(slot, 911)
 
     import time
-    time.sleep(0.2)
+    time.sleep(0.5)
 
     read = (instr.ask('print(dmm.measure())'))
     # instr.write("beeper.beep(0.1, 2400)")
@@ -362,6 +380,7 @@ def fileWrite(file, string):
 
 
 def errorBeep():
+    return
     instr.write("beeper.beep(0.2, 3000)")
     instr.write("beeper.beep(0.2, 2600)")
     instr.write("beeper.beep(0.2, 2200)")
