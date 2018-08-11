@@ -5,6 +5,8 @@ from datetime import datetime
 import argparse
 import sys
 import os
+import time
+from engineering_notation import EngNumber
 
 v250 = 30
 v5 = 5
@@ -57,17 +59,42 @@ def continuityLoadTest():
         instr.write('dmm.range = 7')
 
         # Setup common voltages
-        # GND to HI on 37 pin module
-        chClose(1, 89)
-        # GND to LO on 37 pin module
-        chClose(1, 93)
         # 5V to HI on 44 pin module
         chClose(2, 89)
         # GND to LO on 44 pin module
         chClose(2, 93)
+        v5 = read(2)
+
+        # GND to HI on 37 pin module
+        chClose(1, 89)
+        # GND to LO on 37 pin module
+        chClose(1, 93)
 
         goodWires = []
         badWires = []
+
+        R37 = 5.3
+        R44 = 10.3
+
+        RcableLimit = 2
+
+        s1 = f"Cont. Load Test (0/{2*len(channelTable)})"
+        s2 = f"R37: {EngNumber(R37)}ohm"
+        fileWrite(file, s2 + "\n")
+        show(s1, s2)
+
+        s2 = f"R44: {EngNumber(R37)}ohm"
+        fileWrite(file, s2 + "\n")
+        show(s1, s2)
+
+        s2 = f"R cable threshold: {EngNumber(RcableLimit)}ohm"
+        fileWrite(file, s2 + "\n")
+        show(s1, s2)
+
+
+        s2 = f"Power Supply Voltage: {EngNumber(v5)}v"
+        fileWrite(file, s2 + "\n")
+        show(s1, s2)
 
         n = 1
         for row in channelTable:
@@ -82,9 +109,14 @@ def continuityLoadTest():
             chClose(2, pin44)
             valid1, voltage1, expected1 = read(1, v0)
             valid2, voltage2, expected2 = read(2, v5)
+            c1 = (voltage1) / R37
+            c2 = (v5 - voltage2) / R44
+            c = (c1 + c2) / 2.0
+            r = abs(voltage2 - voltage1) / c
+
             valid = 'Error'
             if (valid1 and valid2): valid = 'OK'
-            s2 = f"    -- {pin44:02d}H {valid} {voltage1:.2f}|{voltage2:.2f} v      ({expected1:.2f}|{expected2:.2f})v"
+            s2 = f"    -- {pin44:02d}H {valid}            {voltage1:.2f}|{voltage2:.2f} v  ({expected1:.2f}|{expected2:.2f})v"
             show(s1, s2)
             fileWrite(file, s2 + "\n")
             wireValid &= valid1 and valid2
@@ -92,27 +124,38 @@ def continuityLoadTest():
             chClose(1, pin37A)
             valid1, voltage1, expected1 = read(1, vHalf,0.40)
             valid2, voltage2, expected2 = read(2, vHalf,0.40)
+
+            c1 = (voltage1)/R37
+            c2 = (v5-voltage2)/R44
+            c = (c1+c2)/2.0
+            r = abs(voltage2-voltage1)/c
+
             valid = 'Error'
-            if (valid1 and valid2): valid = 'OK'
-            s2 = f"{pin37A:02d}H -- {pin44:02d}H {valid} {voltage1:.2f}|{voltage2:.2f} v      ({expected1:.2f}|{expected2:.2f})v"
+            if (r<RcableLimit): valid = 'OK'
+            s2 = f"{pin37A:02d}H -- {pin44:02d}H {valid}  {EngNumber(r)}ohm   {voltage1:.2f}|{voltage2:.2f} v  ({expected1:.2f}|{expected2:.2f})v"
             show(s1, s2)
             fileWrite(file, s2 + "\n")
             chOpen(1, pin37A)
 
-            wireValid &= valid1 and valid2
+            wireValid &= r<RcableLimit
             if wireValid:
-                goodWires.append([pin37A, pin44])
+                goodWires.append([pin37A, pin44,r])
             else:
-                badWires.append([pin37A, pin44])
+                badWires.append([pin37A, pin44,r])
                 errorBeep()
 
             # Test wire B
             wireValid = True
             valid1, voltage1, expected1 = read(1, v0)
             valid2, voltage2, expected2 = read(2, v5)
+            c1 = (voltage1) / R37
+            c2 = (v5 - voltage2) / R44
+            c = (c1 + c2) / 2.0
+            r = abs(voltage2 - voltage1) / c
+
             valid = 'Error'
             if (valid1 and valid2): valid = 'OK'
-            s2 = f"    -- {pin44:02d}H {valid} {voltage1:.2f}|{voltage2:.2f} v      ({expected1:.2f}|{expected2:.2f})v"
+            s2 = f"    -- {pin44:02d}H {valid}            {voltage1:.2f}|{voltage2:.2f} v  ({expected1:.2f}|{expected2:.2f})v"
             show(s1, s2)
             fileWrite(file, s2 + "\n")
             wireValid &= valid1 and valid2
@@ -120,18 +163,24 @@ def continuityLoadTest():
             chClose(1, pin37B)
             valid1, voltage1, expected1 = read(1, vHalf,0.4)
             valid2, voltage2, expected2 = read(2, vHalf,0.4)
+
+            c1 = (voltage1) / R37
+            c2 = (v5 - voltage2) / R44
+            c = (c1 + c2) / 2.0
+            r = abs(voltage2 - voltage1) / c
+
             valid = 'Error'
-            if (valid1 and valid2): valid = 'OK'
-            s2 = f"{pin37B:02d}H -- {pin44:02d}H {valid} {voltage1:.2f}|{voltage2:.2f} v      ({expected1:.2f}|{expected2:.2f})v"
+            if (r < RcableLimit): valid = 'OK'
+            s2 = f"{pin37B:02d}H -- {pin44:02d}H {valid}  {EngNumber(r)}ohm   {voltage1:.2f}|{voltage2:.2f} v  ({expected1:.2f}|{expected2:.2f})v"
             show(s1, s2)
             fileWrite(file, s2 + "\n")
             chOpen(1, pin37B)
 
-            wireValid &= valid1 and valid2
+            wireValid &= r<RcableLimit
             if wireValid:
-                goodWires.append([pin37B, pin44])
+                goodWires.append([pin37B, pin44,r])
             else:
-                badWires.append([pin37B, pin44])
+                badWires.append([pin37B, pin44,r])
                 errorBeep()
 
             chOpen(2, pin44)
@@ -143,17 +192,28 @@ def continuityLoadTest():
             errorBeep()
             errorBeep()
             fileWrite(file, "\n---> Continuity and Load Test FAILED!\n\n")
-            fileWrite(file, f"{len(goodWires)} of {len(channelTable)*2} wires passed the Continuity and Load Test\n")
-            fileWrite(file, f"These wires failed:\n\n")
-            fileWrite(file, f"pin37\t\tpin47\n")
-            fileWrite(file, f"-----\t\t-----\n")
+            fileWrite(file, f"{len(goodWires)} of {len(channelTable)*2} wires passed the Continuity and Load Test\n\n")
+
+            fileWrite(file, f"These wires passed:\n\n")
+            fileWrite(file, f"pin37\t\tpin47\t\t\n")
+            fileWrite(file, f"-----\t\t-----\t\t-----\n")
+            for pair in goodWires:
+                fileWrite(file, f"CH{pair[0]}H\t\tCH{pair[1]}H\t\t{EngNumber(pair[2])}ohm\n")
+
+            fileWrite(file, f"\nThese wires failed:\n\n")
+            fileWrite(file, f"pin37\t\tpin47\t\t\n")
+            fileWrite(file, f"-----\t\t-----\t\t-----\n")
             for pair in badWires:
-                fileWrite(file, f"CH{pair[0]}H\t\tCH{pair[1]}H\n")
+                fileWrite(file, f"CH{pair[0]}H\t\tCH{pair[1]}H\t\t{EngNumber(pair[2])}ohm\n")
         else:
             show("Cont. Load PASSED!", f"{len(goodWires)} of {len(channelTable)*2} wires are good")
             successBeep()
             fileWrite(file, "\n---> Continuity and Load Test PASSED!\n\n")
-            fileWrite(file, f"{len(goodWires)} of {len(channelTable)*2} wires passed the Continuity and Load Test\n")
+            fileWrite(file, f"{len(goodWires)} of {len(channelTable)*2} wires passed the Continuity and Load Test\n\n")
+            fileWrite(file, f"pin37\t\tpin47\t\t\n")
+            fileWrite(file, f"-----\t\t-----\t\t-----\n")
+            for pair in goodWires:
+                fileWrite(file, f"CH{pair[0]}H\t\tCH{pair[1]}H\t\t{EngNumber(pair[2])}ohm\n")
 
         fileWrite(file, "\n\n")
 
@@ -173,6 +233,19 @@ def hiPotTest():
 
         Rtest = 100000
 
+        rLimit=1e6
+
+        s1 = f"HiPot (0/{len(channelTable)})"
+        s2 = f"Rtest: {EngNumber(Rtest)}ohm"
+        fileWrite(file, s2 + "\n")
+        show(s1, s2)
+
+        s2 = f"R Threshold : {EngNumber(rLimit)}ohm"
+        fileWrite(file, s2 + "\n")
+        show(s1, s2)
+
+
+
         # 250V to HI on 44 pin module
         chClose(2, 90)
         # GND to LO on 44 pin module
@@ -184,12 +257,31 @@ def hiPotTest():
         chOpen(2, 90)
 
 
+        s2 =  f"Power supply voltage: {v250:.3f} v"
+        fileWrite(file, s2 + "\n")
+        show(s1, s2)
+
         # Setup common voltages
         chClose(2, 91)
         # GND to LO on 44 pin module
         chClose(2, 93)
         Vdmm = read(2)
         Rdmm = -(Rtest * Vdmm) / ( Vdmm - v250)
+
+        s2 = f"Rtest: {EngNumber(Rtest)}ohm"
+        fileWrite(file, s2 + "\n")
+        show(s1, s2)
+
+
+        s2 =  f"Voltage after Rtest: {EngNumber(Vdmm)}v"
+        fileWrite(file, s2 + "\n")
+        show(s1, s2)
+
+
+        s2 =  f"DMM input impedance: {EngNumber(Rdmm)}ohm"
+        fileWrite(file, s2 + "\n")
+        show(s1, s2)
+
 
         # GND to HI on 37 pin module
         chClose(1, 90)
@@ -228,27 +320,29 @@ def hiPotTest():
             valid1, voltage1, expected1 = read(1, v0)
             valid2, voltage2, expected2 = read(2, v250)
 
+            #input("Press Enter to continue...")
+
             R = -(Rtest * voltage2) / (voltage2 - v250)
             r = - (R * Rdmm) / ( R - Rdmm  )
 
 
-            print(v250,Vdmm,voltage2)
-            print(Rdmm,R,r)
-            print(voltage2/Rdmm*1000,voltage2/r*1000,voltage2/Rdmm*1000+voltage2/r*1000, (v250-voltage2)/Rtest*1000)
+            #print(v250,Vdmm,voltage2)
+            #print(Rdmm,R,r)
+            #print(voltage2/Rdmm*1000,voltage2/r*1000,voltage2/Rdmm*1000+voltage2/r*1000, (v250-voltage2)/Rtest*1000)
 
 
             valid = 'Error'
-            if (valid1 and valid2): valid = 'OK'
-            s2 = f"{pin37A:02d}H,{pin37B:02d}H -/- {pin44:02d}H {valid} {voltage1:.1f}|{voltage2:.1f} v      ({expected1:.1f}|{expected2:.1f})v   {r/1000000:.2f} Mohm {voltage2/r*1000000:.4f} uA leakage"
+            if (valid1 and r>=rLimit): valid = 'OK'
+            s2 = f"{pin37A:02d}H,{pin37B:02d}H -/- {pin44:02d}H {valid}   {EngNumber(r)}ohm   {EngNumber(voltage2/r)}A leakage  {voltage1:.2f}|{voltage2:.2f} v   ({expected1:.2f}|{expected2:.2f})v "
             fileWrite(file, s2 + "\n")
             show(s1, s2)
 
             chOpen(2, pin44)
 
-            if valid1 and valid2:
-                goodWires.append([pin37A, pin37B, pin44])
+            if valid1 and r>=rLimit:
+                goodWires.append([pin37A, pin37B, pin44,r])
             else:
-                badWires.append([pin37A, pin37B, pin44])
+                badWires.append([pin37A, pin37B, pin44,r])
                 errorBeep()
 
             n += 1
@@ -260,19 +354,126 @@ def hiPotTest():
             errorBeep()
             fileWrite(file, "\n---> Hi-Pot Test FAILED!\n\n")
             fileWrite(file, f"{len(goodWires)} of {len(channelTable)} pairs of wires passed the Hi-Pot Test\n")
-            fileWrite(file, f"These pair of wires failed:\n\n")
-            fileWrite(file, f"pin37A\tpin37B\t\tpin47\n")
-            fileWrite(file, f"------\t------\t\t-----\n")
+
+            fileWrite(file, f"These pair of wires passed:\n\n")
+            fileWrite(file, f"pin37A\tpin37B\t\tpin47\t\t \n")
+            fileWrite(file, f"------\t------\t\t-----\t\t---------\n")
+            for pair in goodWires:
+                fileWrite(file, f"CH{pair[0]}H\tCH{pair[1]}H\t\tCH{pair[2]}H\t\t{EngNumber(pair[3])}ohm\n")
+
+            fileWrite(file, f"\nThese pair of wires failed:\n\n")
+            fileWrite(file, f"pin37A\tpin37B\t\tpin47\t\t \n")
+            fileWrite(file, f"------\t------\t\t-----\t\t---------\n")
             for pair in badWires:
-                fileWrite(file, f"CH{pair[0]}H\tCH{pair[1]}H\t\tCH{pair[2]}H\n")
+                fileWrite(file, f"CH{pair[0]}H\tCH{pair[1]}H\t\tCH{pair[2]}H\t\t{EngNumber(pair[3])}ohm\n")
         else:
             show("HiPot. PASSED!", f"{len(goodWires)} of {len(channelTable)} pairs are good")
             successBeep()
             fileWrite(file, "\n---> Hi-Pot Test PASSED!\n\n")
-            fileWrite(file, f"{len(goodWires)} of {len(channelTable)} pairs of wires passed the Hi-Pot Test\n")
+            fileWrite(file, f"{len(goodWires)} of {len(channelTable)} pairs of wires passed the Hi-Pot Test\n\n")
+
+            fileWrite(file, f"pin37A\tpin37B\t\tpin47\t\t \n")
+            fileWrite(file, f"------\t------\t\t-----\t\t---------\n")
+            for pair in goodWires:
+                fileWrite(file, f"CH{pair[0]}H\tCH{pair[1]}H\t\tCH{pair[2]}H\t\t{EngNumber(pair[3])}ohm\n")
 
         fileWrite(file, "\n\n")
 
+def valuesTest():
+    i = datetime.now()
+    with open("reports/voltage_values_" + i.strftime('%Y_%m_%d_%Hh%Mm%Ss') + f"_{name}.txt", 'w') as file:
+        fileWrite(file, "LSST Camera Vacuum feedthrough Voltage values Test\n")
+        fileWrite(file, name + "\n")
+        fileWrite(file, i.strftime('%Y/%m/%d %H:%M:%S\n\n'))
+
+        show("Voltage values Test", "Preparing for test")
+
+        preConfiguration()
+
+        instr.write('dmm.func = "dcvolts"')
+
+        # Setup common voltages
+
+        # GND to LO on 37 pin module
+        chClose(1, 93) #TODO where is the ground?
+
+        goodWires = []
+        badWires = []
+
+        tolerance=0.1 #v
+
+        n = 1
+        for row in channelTable:
+            s1 = f"Voltage values Test ({n}/{len(channelTable)})"
+            fileWrite(file, "\n" + s1 + "\n")
+            pin44 = row[0]
+            pin37A = row[1]
+            pin37B = row[2]
+            expected = row[3]
+
+            # Test wire A
+            chClose(1, pin37A)
+            validA, voltageA, expectedA = read(1, expected,tolerance)
+            chOpen(1,pin37A)
+
+            valid = 'Error'
+            if (validA):
+                valid = 'OK'
+                goodWires.append([pin37B,expected,voltageA])
+            else:
+                badWires.append([pin37B,expected,voltageA])
+            s2 = f"{pin37A:02d}H {valid}  {voltageA:.2f} v  ({expectedA:.2f}) v"
+            show(s1, s2)
+            fileWrite(file, s2 + "\n")
+
+            # Test wire B
+            chClose(1, pin37B)
+            validB, voltageB, expectedB = read(1, expected,tolerance)
+            chOpen(1,pin37B)
+            valid = 'Error'
+            if (validB):
+                valid = 'OK'
+                goodWires.append([pin37B,expected,voltageB])
+            else:
+                badWires.append([pin37B,expected,voltageB])
+            s2 = f"{pin37B:02d}H {valid}  {voltageB:.2f} v  ({expectedB:.2f}) v"
+            show(s1, s2)
+            fileWrite(file, s2 + "\n")
+
+            n+=1
+
+        fileWrite(file, "\n-----------------------------------------------------------------------------------\n")
+        if len(badWires) > 0:
+            show("$BVoltage values FAILED!", f"$B{len(badWires)} of {len(channelTable)*2} wires are bad")
+            errorBeep()
+            errorBeep()
+            fileWrite(file, "\n---> Voltage values test FAILED!\n\n")
+            fileWrite(file,
+                      f"{len(goodWires)} of {len(channelTable)*2} wires passed the Voltage values Test\n\n")
+
+            fileWrite(file, f"These wires passed:\n\n")
+            fileWrite(file, f"pin37\t\texpected\t\tread\n")
+            fileWrite(file, f"-----\t\t--------\t\t----\n")
+            for pair in goodWires:
+                fileWrite(file, f"CH{pair[0]}H\t\t{EngNumber(pair[1])}v\t\t{EngNumber(pair[2])}v\n")
+
+            fileWrite(file, f"\nThese wires failed:\n\n")
+            fileWrite(file, f"pin37\t\texpected\t\tread\n")
+            fileWrite(file, f"-----\t\t--------\t\t----\n")
+            for pair in badWires:
+                fileWrite(file, f"CH{pair[0]}H\t\t{EngNumber(pair[1])}v\t\t{EngNumber(pair[2])}v\n")
+        else:
+            show("Voltage values PASSED!", f"{len(goodWires)} of {len(channelTable)*2} wires are good")
+            successBeep()
+            fileWrite(file, "\n---> Voltage values Test PASSED!\n\n")
+            fileWrite(file,
+                      f"{len(goodWires)} of {len(channelTable)*2} wires passed the Voltage values  Test\n\n")
+            fileWrite(file, f"pin37\t\texpected\t\tread\n")
+            fileWrite(file, f"-----\t\t--------\t\t----\n")
+            for pair in goodWires:
+                fileWrite(file, f"CH{pair[0]}H\t\t{EngNumber(pair[1])}v\t\t{EngNumber(pair[2])}v\n")
+
+        fileWrite(file, "\n\n")
 
 # Util functions
 
@@ -296,7 +497,7 @@ def readCsv(filePath):
         for row in reader:
             if row[0] != '':
                 rawTable.append(row)
-                channelRow = [row[0], row[2], row[3]]
+                channelRow = [row[0], row[2], row[3],row[5]]
                 for n, col in enumerate(channelRow):
                     channelRow[n] = int(col.replace("CH", "").replace("Ch", "").replace("H", ""))
                 channelTable.append(channelRow)
@@ -310,8 +511,8 @@ def read(slot, expected=None, tolerance=0.05):
 
     chClose(slot, 911)
 
-    import time
-    time.sleep(0.5)
+
+    #time.sleep(0.5)
 
     read = (instr.ask('print(dmm.measure())'))
     # instr.write("beeper.beep(0.1, 2400)")
@@ -380,7 +581,7 @@ def fileWrite(file, string):
 
 
 def errorBeep():
-    return
+    #return
     instr.write("beeper.beep(0.2, 3000)")
     instr.write("beeper.beep(0.2, 2600)")
     instr.write("beeper.beep(0.2, 2200)")
@@ -396,6 +597,7 @@ def parse_args(args):
     parser = argparse.ArgumentParser()
     parser.add_argument('-cl', dest='contLoad', help='Run Continuity and Load test', action="store_true")
     parser.add_argument('-hp', dest='hiPot', help='Run Hi-Pot test', action="store_true")
+    parser.add_argument('-vt', dest='values', help='Run voltage values test', action="store_true")
     parser.add_argument('-n', dest='name', help='Append a name to the report files')
     parser.add_argument('-ip', dest='ip', help='Keithley IP address')
 
@@ -428,6 +630,9 @@ if __name__ == "__main__":
 
         if args.hiPot:
             hiPotTest()
+
+        if args.values:
+            valuesTest()
 
     except Exception as e:
         show("Error!", "Python script error")
