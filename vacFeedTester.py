@@ -125,13 +125,11 @@ def continuityLoadTest():
             valid1, voltage1, expected1 = read(1, vHalf,0.40)
             valid2, voltage2, expected2 = read(2, vHalf,0.40)
 
-            c1 = (voltage1)/R37
-            c2 = (v5-voltage2)/R44
-            c = (c1+c2)/2.0
+            c = (v5-voltage2)/R44
             r = abs(voltage2-voltage1)/c
 
             valid = 'Error'
-            if (r<RcableLimit): valid = 'OK'
+            if (r<RcableLimit and r>0): valid = 'OK'
             s2 = f"{pin37A:02d}H -- {pin44:02d}H {valid}  {EngNumber(r)}ohm   {voltage1:.2f}|{voltage2:.2f} v  ({expected1:.2f}|{expected2:.2f})v"
             show(s1, s2)
             fileWrite(file, s2 + "\n")
@@ -170,7 +168,7 @@ def continuityLoadTest():
             r = abs(voltage2 - voltage1) / c
 
             valid = 'Error'
-            if (r < RcableLimit): valid = 'OK'
+            if (r < RcableLimit and r>0): valid = 'OK'
             s2 = f"{pin37B:02d}H -- {pin44:02d}H {valid}  {EngNumber(r)}ohm   {voltage1:.2f}|{voltage2:.2f} v  ({expected1:.2f}|{expected2:.2f})v"
             show(s1, s2)
             fileWrite(file, s2 + "\n")
@@ -205,6 +203,7 @@ def continuityLoadTest():
             fileWrite(file, f"-----\t\t-----\t\t-----\n")
             for pair in badWires:
                 fileWrite(file, f"CH{pair[0]}H\t\tCH{pair[1]}H\t\t{EngNumber(pair[2])}ohm\n")
+            result = True
         else:
             show("Cont. Load PASSED!", f"{len(goodWires)} of {len(channelTable)*2} wires are good")
             successBeep()
@@ -214,8 +213,10 @@ def continuityLoadTest():
             fileWrite(file, f"-----\t\t-----\t\t-----\n")
             for pair in goodWires:
                 fileWrite(file, f"CH{pair[0]}H\t\tCH{pair[1]}H\t\t{EngNumber(pair[2])}ohm\n")
+            result = False
 
         fileWrite(file, "\n\n")
+        return result
 
 
 def hiPotTest():
@@ -366,6 +367,7 @@ def hiPotTest():
             fileWrite(file, f"------\t------\t\t-----\t\t---------\n")
             for pair in badWires:
                 fileWrite(file, f"CH{pair[0]}H\tCH{pair[1]}H\t\tCH{pair[2]}H\t\t{EngNumber(pair[3])}ohm\n")
+            result = False
         else:
             show("HiPot. PASSED!", f"{len(goodWires)} of {len(channelTable)} pairs are good")
             successBeep()
@@ -377,16 +379,19 @@ def hiPotTest():
             for pair in goodWires:
                 fileWrite(file, f"CH{pair[0]}H\tCH{pair[1]}H\t\tCH{pair[2]}H\t\t{EngNumber(pair[3])}ohm\n")
 
-        fileWrite(file, "\n\n")
+            result = False
 
-def valuesTest():
+        fileWrite(file, "\n\n")
+        return result
+
+def pinoutTest():
     i = datetime.now()
     with open("reports/voltage_values_" + i.strftime('%Y_%m_%d_%Hh%Mm%Ss') + f"_{name}.txt", 'w') as file:
-        fileWrite(file, "LSST Camera Vacuum feedthrough Voltage values Test\n")
+        fileWrite(file, "LSST Camera Vacuum feedthrough Pinout Test\n")
         fileWrite(file, name + "\n")
         fileWrite(file, i.strftime('%Y/%m/%d %H:%M:%S\n\n'))
 
-        show("Voltage values Test", "Preparing for test")
+        show("Pinout Test", "Preparing for test")
 
         preConfiguration()
 
@@ -404,7 +409,7 @@ def valuesTest():
 
         n = 1
         for row in channelTable:
-            s1 = f"Voltage values Test ({n}/{len(channelTable)})"
+            s1 = f"Pinout Test ({n}/{len(channelTable)})"
             fileWrite(file, "\n" + s1 + "\n")
             pin44 = row[0]
             pin37A = row[1]
@@ -447,9 +452,9 @@ def valuesTest():
             show("$BVoltage values FAILED!", f"$B{len(badWires)} of {len(channelTable)*2} wires are bad")
             errorBeep()
             errorBeep()
-            fileWrite(file, "\n---> Voltage values test FAILED!\n\n")
+            fileWrite(file, "\n---> Pinout test FAILED!\n\n")
             fileWrite(file,
-                      f"{len(goodWires)} of {len(channelTable)*2} wires passed the Voltage values Test\n\n")
+                      f"{len(goodWires)} of {len(channelTable)*2} wires passed the Pinout Test\n\n")
 
             fileWrite(file, f"These wires passed:\n\n")
             fileWrite(file, f"pin37\t\texpected\t\tread\n")
@@ -462,18 +467,21 @@ def valuesTest():
             fileWrite(file, f"-----\t\t--------\t\t----\n")
             for pair in badWires:
                 fileWrite(file, f"CH{pair[0]}H\t\t{EngNumber(pair[1])}v\t\t{EngNumber(pair[2])}v\n")
+            result = True
         else:
-            show("Voltage values PASSED!", f"{len(goodWires)} of {len(channelTable)*2} wires are good")
+            show("Pinout PASSED!", f"{len(goodWires)} of {len(channelTable)*2} wires are good")
             successBeep()
-            fileWrite(file, "\n---> Voltage values Test PASSED!\n\n")
+            fileWrite(file, "\n---> Pinout Test PASSED!\n\n")
             fileWrite(file,
-                      f"{len(goodWires)} of {len(channelTable)*2} wires passed the Voltage values  Test\n\n")
+                      f"{len(goodWires)} of {len(channelTable)*2} wires passed the Pinout  Test\n\n")
             fileWrite(file, f"pin37\t\texpected\t\tread\n")
             fileWrite(file, f"-----\t\t--------\t\t----\n")
             for pair in goodWires:
                 fileWrite(file, f"CH{pair[0]}H\t\t{EngNumber(pair[1])}v\t\t{EngNumber(pair[2])}v\n")
+            result = False
 
         fileWrite(file, "\n\n")
+        return result
 
 # Util functions
 
@@ -558,7 +566,7 @@ def chOpen(module, channels):
     instr.write(f'channel.open("{adds}")')
 
 
-def show(string1, string2=''):
+def show(string1, string2='',c_print=False):
     string2 = string2.replace("Error", 'X').replace('OK', 'V')
 
     a = f'''display.clear()
@@ -573,6 +581,10 @@ def show(string1, string2=''):
     # print()
     # print(string1[0:n1-1])
     # if string2!='': print(string2[0:n2-1])
+
+    if c_print:
+        print(string1)
+        print(string2)
 
 
 def fileWrite(file, string):
@@ -597,7 +609,8 @@ def parse_args(args):
     parser = argparse.ArgumentParser()
     parser.add_argument('-cl', dest='contLoad', help='Run Continuity and Load test', action="store_true")
     parser.add_argument('-hp', dest='hiPot', help='Run Hi-Pot test', action="store_true")
-    parser.add_argument('-vt', dest='values', help='Run voltage values test', action="store_true")
+    parser.add_argument('-t', dest='tests', help='Run Continuity and Load and Hi-Pot test', action="store_true")
+    parser.add_argument('-p', dest='pinout', help='Run Pinout test', action="store_true")
     parser.add_argument('-n', dest='name', help='Append a name to the report files')
     parser.add_argument('-ip', dest='ip', help='Keithley IP address')
 
@@ -624,15 +637,48 @@ if __name__ == "__main__":
 
         if args.name is not None:
             name = args.name
-
-        if args.contLoad:
-            continuityLoadTest()
+        else:
+            name = input("Name of the cable beeing tested:")
 
         if args.hiPot:
             hiPotTest()
 
-        if args.values:
-            valuesTest()
+        if args.contLoad:
+            continuityLoadTest()
+
+        if args.tests:
+            hiPot = hiPotTest()
+            contLoad = continuityLoadTest()
+
+            if hiPot and contLoad:
+                print("\n\n---------------------------------------------------------------------------------------------------\n")
+                show("Both Tests PASSED!", "", True)
+            else:
+                s = "Hi-Pot "
+                if hiPot:
+                    s+="PASSED"
+                else:
+                    s+= "$BFAILED"
+                s+="    ContLoad "
+                if contLoad:
+                    s+="PASSED"
+                else:
+                    s+= "$BFAILED"
+                show("$BTests FAILED!", s, True)
+                print("\n---------------------------------------------------------------------------------------------------\n")
+
+
+
+        if args.pinout:
+            pinout = pinoutTest()
+
+            print("\n\n---------------------------------------------------------------------------------------------------\n")
+            if pinout:
+                show("Pinout PASSED!","",True)
+            else:
+                show("$BPinout FAILED!","",True)
+            print("\n---------------------------------------------------------------------------------------------------\n")
+
 
     except Exception as e:
         show("Error!", "Python script error")
