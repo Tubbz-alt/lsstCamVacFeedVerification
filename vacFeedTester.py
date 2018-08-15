@@ -44,6 +44,8 @@ def preConfiguration():
 
 
 def continuityLoadTest():
+    RcableLimit = 2
+
     i = datetime.now()
     with open("reports/continuity_load_" + i.strftime('%Y_%m_%d_%Hh%Mm%Ss') + f"_{name}.txt", 'w') as file:
 
@@ -76,7 +78,6 @@ def continuityLoadTest():
         R37 = 5.3
         R44 = 10.3
 
-        RcableLimit = 2
 
         s1 = f"Cont. Load Test (0/{2*len(channelTable)})"
         s2 = f"R37: {EngNumber(R37)}ohm"
@@ -203,7 +204,7 @@ def continuityLoadTest():
             fileWrite(file, f"-----\t\t-----\t\t-----\n")
             for pair in badWires:
                 fileWrite(file, f"CH{pair[0]}H\t\tCH{pair[1]}H\t\t{EngNumber(pair[2])}ohm\n")
-            result = True
+            result = False
         else:
             show("Cont. Load PASSED!", f"{len(goodWires)} of {len(channelTable)*2} wires are good")
             successBeep()
@@ -213,13 +214,15 @@ def continuityLoadTest():
             fileWrite(file, f"-----\t\t-----\t\t-----\n")
             for pair in goodWires:
                 fileWrite(file, f"CH{pair[0]}H\t\tCH{pair[1]}H\t\t{EngNumber(pair[2])}ohm\n")
-            result = False
+            result = True
 
         fileWrite(file, "\n\n")
         return result
 
 
 def hiPotTest():
+    rLimit = 1e6
+
     i = datetime.now()
     with open("reports/hi_pot_" + i.strftime('%Y_%m_%d_%Hh%Mm%Ss') + f"_{name}.txt", 'w') as file:
         fileWrite(file, "LSST Camera Vacuum feedthrough Hi-Pot Test\n")
@@ -234,7 +237,7 @@ def hiPotTest():
 
         Rtest = 100000
 
-        rLimit=1e6
+
 
         s1 = f"HiPot (0/{len(channelTable)})"
         s2 = f"Rtest: {EngNumber(Rtest)}ohm"
@@ -379,14 +382,14 @@ def hiPotTest():
             for pair in goodWires:
                 fileWrite(file, f"CH{pair[0]}H\tCH{pair[1]}H\t\tCH{pair[2]}H\t\t{EngNumber(pair[3])}ohm\n")
 
-            result = False
+            result = True
 
         fileWrite(file, "\n\n")
         return result
 
 def pinoutTest():
     i = datetime.now()
-    with open("reports/voltage_values_" + i.strftime('%Y_%m_%d_%Hh%Mm%Ss') + f"_{name}.txt", 'w') as file:
+    with open("reports/pinout_" + i.strftime('%Y_%m_%d_%Hh%Mm%Ss') + f"_{name}.txt", 'w') as file:
         fileWrite(file, "LSST Camera Vacuum feedthrough Pinout Test\n")
         fileWrite(file, name + "\n")
         fileWrite(file, i.strftime('%Y/%m/%d %H:%M:%S\n\n'))
@@ -449,7 +452,7 @@ def pinoutTest():
 
         fileWrite(file, "\n-----------------------------------------------------------------------------------\n")
         if len(badWires) > 0:
-            show("$BVoltage values FAILED!", f"$B{len(badWires)} of {len(channelTable)*2} wires are bad")
+            show("$BPinout FAILED!", f"$B{len(badWires)} of {len(channelTable)*2} wires are bad")
             errorBeep()
             errorBeep()
             fileWrite(file, "\n---> Pinout test FAILED!\n\n")
@@ -460,14 +463,14 @@ def pinoutTest():
             fileWrite(file, f"pin37\t\texpected\t\tread\n")
             fileWrite(file, f"-----\t\t--------\t\t----\n")
             for pair in goodWires:
-                fileWrite(file, f"CH{pair[0]}H\t\t{EngNumber(pair[1])}v\t\t{EngNumber(pair[2])}v\n")
+                fileWrite(file, f"CH{pair[0]}H\t\t{EngNumber(pair[1])}v\t\t\t{EngNumber(pair[2])}v\n")
 
             fileWrite(file, f"\nThese wires failed:\n\n")
             fileWrite(file, f"pin37\t\texpected\t\tread\n")
             fileWrite(file, f"-----\t\t--------\t\t----\n")
             for pair in badWires:
-                fileWrite(file, f"CH{pair[0]}H\t\t{EngNumber(pair[1])}v\t\t{EngNumber(pair[2])}v\n")
-            result = True
+                fileWrite(file, f"CH{pair[0]}H\t\t{EngNumber(pair[1])}v\t\t\t{EngNumber(pair[2])}v\n")
+            result = False
         else:
             show("Pinout PASSED!", f"{len(goodWires)} of {len(channelTable)*2} wires are good")
             successBeep()
@@ -478,7 +481,7 @@ def pinoutTest():
             fileWrite(file, f"-----\t\t--------\t\t----\n")
             for pair in goodWires:
                 fileWrite(file, f"CH{pair[0]}H\t\t{EngNumber(pair[1])}v\t\t{EngNumber(pair[2])}v\n")
-            result = False
+            result = True
 
         fileWrite(file, "\n\n")
         return result
@@ -583,8 +586,8 @@ def show(string1, string2='',c_print=False):
     # if string2!='': print(string2[0:n2-1])
 
     if c_print:
-        print(string1)
-        print(string2)
+        print(string1.replace("$B",""))
+        print(string2.replace("$B",""))
 
 
 def fileWrite(file, string):
@@ -638,7 +641,7 @@ if __name__ == "__main__":
         if args.name is not None:
             name = args.name
         else:
-            name = input("Name of the cable beeing tested:")
+            name = input("\nName of the cable beeing tested:")
 
         if args.hiPot:
             hiPotTest()
@@ -652,7 +655,10 @@ if __name__ == "__main__":
 
             if hiPot and contLoad:
                 print("\n\n---------------------------------------------------------------------------------------------------\n")
-                show("Both Tests PASSED!", "", True)
+                show("Both Tests PASSED!", "",True)
+                successBeep()
+                successBeep()
+                successBeep()
             else:
                 s = "Hi-Pot "
                 if hiPot:
@@ -664,8 +670,11 @@ if __name__ == "__main__":
                     s+="PASSED"
                 else:
                     s+= "$BFAILED"
-                show("$BTests FAILED!", s, True)
-                print("\n---------------------------------------------------------------------------------------------------\n")
+                show("$BTests FAILED!", s,True)
+                errorBeep()
+                errorBeep()
+                errorBeep()
+            print("---------------------------------------------------------------------------------------------------\n")
 
 
 
@@ -675,8 +684,14 @@ if __name__ == "__main__":
             print("\n\n---------------------------------------------------------------------------------------------------\n")
             if pinout:
                 show("Pinout PASSED!","",True)
+                successBeep()
+                successBeep()
+                successBeep()
             else:
                 show("$BPinout FAILED!","",True)
+                errorBeep()
+                errorBeep()
+                errorBeep()
             print("\n---------------------------------------------------------------------------------------------------\n")
 
 
