@@ -67,6 +67,19 @@ def continuityLoadTest():
         chClose(2, 93)
         v5 = read(2)
 
+
+        if v250<4.5:
+            show("Cont. Load. FAILED!", f"$BPower supply not powered on (<4.5v)")
+            errorBeep()
+            errorBeep()
+            errorBeep()
+            errorBeep()
+            fileWrite(file, "\n---> Cont. Load Test FAILED!\n\n")
+            fileWrite(file, f"Power supply not powered on (<4.5v)\n")
+
+            fileWrite(file, "\n\n")
+            return False
+
         # GND to HI on 37 pin module
         chClose(1, 89)
         # GND to LO on 37 pin module
@@ -259,6 +272,18 @@ def hiPotTest():
         v250 = read(2)
         # 250V to HI on 44 pin module
         chOpen(2, 90)
+
+        if v250<220:
+            show("$BHiPot. FAILED!", f"$BPower supply not powered on (<220v)")
+            errorBeep()
+            errorBeep()
+            errorBeep()
+            errorBeep()
+            fileWrite(file, "\n---> Hi-Pot Test FAILED!\n\n")
+            fileWrite(file, f"Power supply not powered on (<220v)\n")
+
+            fileWrite(file, "\n\n")
+            return False
 
 
         s2 =  f"Power supply voltage: {v250:.3f} v"
