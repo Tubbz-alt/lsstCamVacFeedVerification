@@ -11,17 +11,19 @@ Tests reports are generated in the reports directory.
 
 - Python >3.6
 - python-vxi11
+- engineering_notation
 
 
 # Usage
 
-```
-usage: vacFeedTester.py [-h] [-cl] [-hp] [-n NAME]
+usage: vacFeedTester.py [-h] [-cl] [-hp] [-t] [-p] [-n NAME] [-ip IP]
 
 optional arguments:
   -h, --help  show this help message and exit
   -cl         Run Continuity and Load test
   -hp         Run Hi-Pot test
+  -t          Run Continuity and Load and Hi-Pot test
+  -p          Run Pinout test
   -n NAME     Append a name to the report files
   -ip IP      Keithley IP address
   ```
