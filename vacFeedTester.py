@@ -641,6 +641,10 @@ def parse_args(args):
     parser.add_argument('-p', dest='pinout', help='Run Pinout test', action="store_true")
     parser.add_argument('-n', dest='name', help='Append a name to the report files')
     parser.add_argument('-ip', dest='ip', help='Keithley IP address')
+    parser.add_argument('-m', dest='mapping', help='Channels mapping csv file (Overides --corner_raft and --science_raft)')
+    parser.add_argument('--corner_raft', dest='corner', help='Use corner_raft_channel_mapping.csv mapping file')
+    parser.add_argument('--science_raft', dest='science', help='Use science_raft_channel_mapping.csv mapping file (DEFAULT')
+
 
     parsed_args, _unknown_args = parser.parse_known_args(args)
 
@@ -656,8 +660,13 @@ if __name__ == "__main__":
         if args.ip is not None:
             ip = args.ip
 
+        mapping = "science_raft_channel_mapping.csv"
+        if args.corner:
+            mapping = "corner_raft_channel_mapping.csv"
+        if args.mapping is not None:
+            mapping = args.mapping
 
-        readCsv("channel_mapping.csv")
+        readCsv(mapping)
         connect(ip)
         preConfiguration()
         global name
