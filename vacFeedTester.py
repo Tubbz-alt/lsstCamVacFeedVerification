@@ -68,7 +68,7 @@ def continuityLoadTest():
         v5 = read(2)
 
 
-        if v250<4.5:
+        if v5<4.5:
             show("Cont. Load. FAILED!", f"$BPower supply not powered on (<4.5v)")
             errorBeep()
             errorBeep()
@@ -528,9 +528,12 @@ def readCsv(filePath):
     global rawTable, channelTable
     rawTable = []
     channelTable = []
+    print(filePath)
     with open(filePath, 'r') as csvfile:
         reader = csv.reader(csvfile, delimiter=',')
-        for row in reader:
+        for i, row in enumerate(reader):
+            if i == 0:
+                continue
             if row[0] != '':
                 rawTable.append(row)
                 channelRow = [row[0], row[2], row[3],row[5]]
@@ -656,7 +659,7 @@ if __name__ == "__main__":
 
     try:
         ip = "134.79.217.93"
-        ip = "dmm-b084-test1"
+        #ip = "dmm-b084-test1"
         if args.ip is not None:
             ip = args.ip
 
