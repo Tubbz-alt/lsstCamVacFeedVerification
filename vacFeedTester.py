@@ -8,11 +8,9 @@ import os
 import time
 from engineering_notation import EngNumber
 
-v250 = 30
-v5 = 5
-v0 = 0
-vHalf = 1.66
 
+maxWireR = 2 # Continuity test max acceptable wire impedance in ohms
+minIsolationR = 1e6 # Hi-Pot Test min acceptable isolation impedance in ohms
 
 
 def preConfiguration():
@@ -44,7 +42,10 @@ def preConfiguration():
 
 
 def continuityLoadTest():
-    RcableLimit = 2
+    
+
+    v0 = 0
+    vHalf = 1.66
 
     i = datetime.now()
     with open("reports/continuity_load_" + i.strftime('%Y_%m_%d_%Hh%Mm%Ss') + f"_{name}.txt", 'w') as file:
@@ -68,7 +69,7 @@ def continuityLoadTest():
         v5 = read(2)
 
 
-        if v250<4.5:
+        if v5<4.5:
             show("Cont. Load. FAILED!", f"$BPower supply not powered on (<4.5v)")
             errorBeep()
             errorBeep()
@@ -101,7 +102,7 @@ def continuityLoadTest():
         fileWrite(file, s2 + "\n")
         show(s1, s2)
 
-        s2 = f"R cable threshold: {EngNumber(RcableLimit)}ohm"
+        s2 = f"R cable threshold: {EngNumber(maxWireR)}ohm"
         fileWrite(file, s2 + "\n")
         show(s1, s2)
 
@@ -143,13 +144,13 @@ def continuityLoadTest():
             r = abs(voltage2-voltage1)/c
 
             valid = 'Error'
-            if (r<RcableLimit and r>0): valid = 'OK'
+            if (r<maxWireR and r>0): valid = 'OK'
             s2 = f"{pin37A:02d}H -- {pin44:02d}H {valid}  {EngNumber(r)}ohm   {voltage1:.2f}|{voltage2:.2f} v  ({expected1:.2f}|{expected2:.2f})v"
             show(s1, s2)
             fileWrite(file, s2 + "\n")
             chOpen(1, pin37A)
 
-            wireValid &= r<RcableLimit
+            wireValid &= r<maxWireR
             if wireValid:
                 goodWires.append([pin37A, pin44,r])
             else:
@@ -182,13 +183,13 @@ def continuityLoadTest():
             r = abs(voltage2 - voltage1) / c
 
             valid = 'Error'
-            if (r < RcableLimit and r>0): valid = 'OK'
+            if (r < maxWireR and r>0): valid = 'OK'
             s2 = f"{pin37B:02d}H -- {pin44:02d}H {valid}  {EngNumber(r)}ohm   {voltage1:.2f}|{voltage2:.2f} v  ({expected1:.2f}|{expected2:.2f})v"
             show(s1, s2)
             fileWrite(file, s2 + "\n")
             chOpen(1, pin37B)
 
-            wireValid &= r<RcableLimit
+            wireValid &= r<maxWireR
             if wireValid:
                 goodWires.append([pin37B, pin44,r])
             else:
@@ -234,7 +235,8 @@ def continuityLoadTest():
 
 
 def hiPotTest():
-    rLimit = 1e6
+  
+    v0=0
 
     i = datetime.now()
     with open("reports/hi_pot_" + i.strftime('%Y_%m_%d_%Hh%Mm%Ss') + f"_{name}.txt", 'w') as file:
@@ -257,7 +259,7 @@ def hiPotTest():
         fileWrite(file, s2 + "\n")
         show(s1, s2)
 
-        s2 = f"R Threshold : {EngNumber(rLimit)}ohm"
+        s2 = f"R Threshold : {EngNumber(minIsolationR)}ohm"
         fileWrite(file, s2 + "\n")
         show(s1, s2)
 
@@ -361,14 +363,14 @@ def hiPotTest():
 
 
             valid = 'Error'
-            if (valid1 and r>=rLimit): valid = 'OK'
+            if (valid1 and r>=minIsolationR): valid = 'OK'
             s2 = f"{pin37A:02d}H,{pin37B:02d}H -/- {pin44:02d}H {valid}   {EngNumber(r)}ohm   {EngNumber(voltage2/r)}A leakage  {voltage1:.2f}|{voltage2:.2f} v   ({expected1:.2f}|{expected2:.2f})v "
             fileWrite(file, s2 + "\n")
             show(s1, s2)
 
             chOpen(2, pin44)
 
-            if valid1 and r>=rLimit:
+            if valid1 and r>=minIsolationR:
                 goodWires.append([pin37A, pin37B, pin44,r])
             else:
                 badWires.append([pin37A, pin37B, pin44,r])
@@ -621,7 +623,6 @@ def fileWrite(file, string):
 
 
 def errorBeep():
-    #return
     instr.write("beeper.beep(0.2, 3000)")
     instr.write("beeper.beep(0.2, 2600)")
     instr.write("beeper.beep(0.2, 2200)")
@@ -640,7 +641,7 @@ def parse_args(args):
     parser.add_argument('-t', dest='tests', help='Run Continuity and Load and Hi-Pot test', action="store_true")
     parser.add_argument('-p', dest='pinout', help='Run Pinout test', action="store_true")
     parser.add_argument('-n', dest='name', help='Append a name to the report files')
-    parser.add_argument('-ip', dest='ip', help='Keithley IP address')
+    parser.add_argument('-ip', dest='ip', help='Keithley IP address (DEFAULT: "134.79.217.93")')
     parser.add_argument('-m', dest='mapping', help='Channels mapping csv file (Overides --corner_raft and --science_raft)')
     parser.add_argument('--corner_raft', dest='corner', help='Use corner_raft_channel_mapping.csv mapping file')
     parser.add_argument('--science_raft', dest='science', help='Use science_raft_channel_mapping.csv mapping file (DEFAULT')
@@ -656,7 +657,7 @@ if __name__ == "__main__":
 
     try:
         ip = "134.79.217.93"
-        ip = "dmm-b084-test1"
+        #ip = "dmm-b084-test1"
         if args.ip is not None:
             ip = args.ip
 
@@ -667,6 +668,7 @@ if __name__ == "__main__":
             mapping = args.mapping
 
         readCsv(mapping)
+        print("Connecting to Keithley Tester...")
         connect(ip)
         preConfiguration()
         global name
@@ -675,7 +677,7 @@ if __name__ == "__main__":
         if args.name is not None:
             name = args.name
         else:
-            name = input("\nName of the cable beeing tested:")
+            name = input("\nName of the cable being tested:")
 
         if args.hiPot:
             hiPotTest()
