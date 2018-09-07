@@ -15,7 +15,7 @@ Tests reports are generated in the reports directory.
 
 
 # Usage
-
+```
 usage: vacFeedTester.py [-h] [-cl] [-hp] [-t] [-p] [-n NAME] [-ip IP]
                         [-m MAPPING] [--corner_raft CORNER]
                         [--science_raft SCIENCE]
@@ -34,5 +34,6 @@ optional arguments:
   --science_raft SCIENCE
                         Use science_raft_channel_mapping.csv mapping file
                         (DEFAULT
+ ```
 
 
