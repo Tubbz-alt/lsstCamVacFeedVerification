@@ -530,9 +530,12 @@ def readCsv(filePath):
     global rawTable, channelTable
     rawTable = []
     channelTable = []
+    print(filePath)
     with open(filePath, 'r') as csvfile:
         reader = csv.reader(csvfile, delimiter=',')
-        for row in reader:
+        for i, row in enumerate(reader):
+            if i == 0:
+                continue
             if row[0] != '':
                 rawTable.append(row)
                 channelRow = [row[0], row[2], row[3],row[5]]
