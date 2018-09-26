@@ -265,11 +265,10 @@ def hiPotTest():
 
 
 
-        # 250V to HI on 44 pin module
+        # 250V to HI directly on 44 pin module
         chClose(2, 90)
         # GND to LO on 44 pin module
         chClose(2, 93)
-        import time
         time.sleep(1)
         v250 = read(2)
         # 250V to HI on 44 pin module
@@ -292,12 +291,13 @@ def hiPotTest():
         fileWrite(file, s2 + "\n")
         show(s1, s2)
 
-        # Setup common voltages
+        # 250V to HI trough RTest on 44 pin module
         chClose(2, 91)
         # GND to LO on 44 pin module
         chClose(2, 93)
+
         Vdmm = read(2)
-        Rdmm = -(Rtest * Vdmm) / ( Vdmm - v250)
+        Rdmm = -Vdmm * Rtest/( Vdmm - v250)
 
         s2 = f"Rtest: {EngNumber(Rtest)}ohm"
         fileWrite(file, s2 + "\n")
@@ -333,6 +333,15 @@ def hiPotTest():
             pin37A = row[1]
             pin37B = row[2]
 
+            '''# 250V to HI directly on 44 pin module
+            chClose(2, 90)
+            # GND to LO on 44 pin module
+            chClose(2, 93)
+            time.sleep(1)
+            v250 = read(2)
+            # 250V to HI on 44 pin module
+            chOpen(2, 90)'''
+
             # Close all 37 pins module channels
             closeArray = []
             for row2 in channelTable:
@@ -363,8 +372,10 @@ def hiPotTest():
 
 
             valid = 'Error'
-            if (valid1 and r>=minIsolationR): valid = 'OK'
+            if (valid1 and ( R > Rdmm or r>=minIsolationR)): valid = 'OK'
             s2 = f"{pin37A:02d}H,{pin37B:02d}H -/- {pin44:02d}H {valid}   {EngNumber(r)}ohm   {EngNumber(voltage2/r)}A leakage  {voltage1:.2f}|{voltage2:.2f} v   ({expected1:.2f}|{expected2:.2f})v "
+            if R > Rdmm:
+                s2 = f"{pin37A:02d}H,{pin37B:02d}H -/- {pin44:02d}H {valid}   HI ohm    - A leakage  {voltage1:.2f}|{voltage2:.2f} v   ({expected1:.2f}|{expected2:.2f})v "
             fileWrite(file, s2 + "\n")
             show(s1, s2)
 
