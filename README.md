@@ -7,6 +7,9 @@ Module on slot 2 must be connected to Test Board 2 (44 pins connectors).
 
 Tests reports are generated in the reports directory.
 
+Intructions
+https://docs.google.com/document/d/1x6dPk_IPwKPQqsmpCHHk57jD52UEFfMjabxPpPTrMNw/edit?usp=sharing
+
 # Requirements
 
 - Python >=3.6
