@@ -239,191 +239,188 @@ def hiPotTest():
     v0=0
 
     i = datetime.now()
-    with open("reports/hi_pot_" + i.strftime('%Y_%m_%d_%Hh%Mm%Ss') + f"_{name}.txt", 'w') as file:
-        fileWrite(file, "LSST Camera Vacuum feedthrough Hi-Pot Test\n")
-        fileWrite(file, name + "\n")
-        fileWrite(file, i.strftime('%Y/%m/%d %H:%M:%S\n\n'))
+    with open("reports/hi_pot_details" + i.strftime('%Y_%m_%d_%Hh%Mm%Ss') + f"_{name}.txt", 'w') as file2:
+        with open("reports/hi_pot_" + i.strftime('%Y_%m_%d_%Hh%Mm%Ss') + f"_{name}.txt", 'w') as file:
+            fileWrite(file, "LSST Camera Vacuum feedthrough Hi-Pot Test\n",file2)
+            fileWrite(file, name + "\n",file2)
+            fileWrite(file, i.strftime('%Y/%m/%d %H:%M:%S\n\n'),file2)
 
-        show("HiPot. Test", "Preparing for test")
-        preConfiguration()
+            show("HiPot. Test", "Preparing for test")
+            preConfiguration()
 
-        instr.write('dmm.func = "dcvolts"')
-        instr.write('dmm.range = 260')
+            instr.write('dmm.func = "dcvolts"')
+            instr.write('dmm.range = 260')
 
-        Rtest = 100000
-
-
-
-        s1 = f"HiPot (0/{len(channelTable)})"
-        s2 = f"Rtest: {EngNumber(Rtest)}ohm"
-        fileWrite(file, s2 + "\n")
-        show(s1, s2)
-
-        s2 = f"R Threshold : {EngNumber(minIsolationR)}ohm"
-        fileWrite(file, s2 + "\n")
-        show(s1, s2)
+            Rtest = 100000
 
 
+            s1 = f"HiPot (0/{len(channelTable)})"
+            s2 = f"Rtest: {EngNumber(Rtest)}ohm"
+            fileWrite(file, s2 + "\n",file2)
+            show(s1, s2)
 
-        # 250V to HI directly on 44 pin module
-        chClose(2, 90)
-        # GND to LO on 44 pin module
-        chClose(2, 93)
-        time.sleep(1)
-        v250 = read(2)
-        # 250V to HI on 44 pin module
-        chOpen(2, 90)
+            s2 = f"R Threshold : {EngNumber(minIsolationR)}ohm"
+            fileWrite(file, s2 + "\n",file2)
+            show(s1, s2)
 
-        if v250<220:
-            show("$BHiPot. FAILED!", f"$BPower supply not powered on (<220v)")
-            errorBeep()
-            errorBeep()
-            errorBeep()
-            errorBeep()
-            fileWrite(file, "\n---> Hi-Pot Test FAILED!\n\n")
-            fileWrite(file, f"Power supply not powered on (<220v)\n")
-
-            fileWrite(file, "\n\n")
-            return False
-
-
-        s2 =  f"Power supply voltage: {v250:.3f} v"
-        fileWrite(file, s2 + "\n")
-        show(s1, s2)
-
-        # 250V to HI trough RTest on 44 pin module
-        chClose(2, 91)
-        # GND to LO on 44 pin module
-        chClose(2, 93)
-
-        Vdmm = read(2)
-        Rdmm = -Vdmm * Rtest/( Vdmm - v250)
-
-        s2 = f"Rtest: {EngNumber(Rtest)}ohm"
-        fileWrite(file, s2 + "\n")
-        show(s1, s2)
-
-
-        s2 =  f"Voltage after Rtest: {EngNumber(Vdmm)}v"
-        fileWrite(file, s2 + "\n")
-        show(s1, s2)
-
-
-        s2 =  f"DMM input impedance: {EngNumber(Rdmm)}ohm"
-        fileWrite(file, s2 + "\n")
-        show(s1, s2)
-
-
-        # GND to HI on 37 pin module
-        chClose(1, 90)
-        # GND to LO on 37 pin module
-        chClose(1, 93)
-        # 250V to HI on 44 pin module
-
-
-        goodWires = []
-        badWires = []
-
-        n = 1
-        for row in channelTable:
-            s1 = f"HiPot ({n}/{len(channelTable)})"
-            fileWrite(file, "\n" + s1 + "\n")
-
-            pin44 = row[0]
-            pin37A = row[1]
-            pin37B = row[2]
-
-            '''# 250V to HI directly on 44 pin module
+            # 250V to HI directly on 44 pin module
             chClose(2, 90)
             # GND to LO on 44 pin module
             chClose(2, 93)
             time.sleep(1)
             v250 = read(2)
             # 250V to HI on 44 pin module
-            chOpen(2, 90)'''
+            chOpen(2, 90)
 
-            # Close all 37 pins module channels
-            closeArray = []
-            for row2 in channelTable:
-                pin37A2 = row2[1]
-                pin37B2 = row2[2]
-                closeArray.append(pin37A2)
-                closeArray.append(pin37B2)
-            chClose(1, closeArray)
+            if v250<220:
+                show("$BHiPot. FAILED!", f"$BPower supply not powered on (<220v)")
+                errorBeep()
+                errorBeep()
+                errorBeep()
+                errorBeep()
+                fileWrite(file, "\n---> Hi-Pot Test FAILED!\n\n",file2)
+                fileWrite(file, f"Power supply not powered on (<220v)\n",file2)
 
-            # Open the 37 pins module channels that correspond to the pair of wires beeing tested
-            chOpen(1, [pin37A, pin37B])
-
-            # Close the 44 pins channel
-            chClose(2, pin44)
-
-            valid1, voltage1, expected1 = read(1, v0)
-            valid2, voltage2, expected2 = read(2, v250)
-
-            #input("Press Enter to continue...")
-
-            R = -(Rtest * voltage2) / (voltage2 - v250)
-            r = - (R * Rdmm) / ( R - Rdmm  )
+                fileWrite(file, "\n\n",file2)
+                return False
 
 
-            #print(v250,Vdmm,voltage2)
-            #print(Rdmm,R,r)
-            #print(voltage2/Rdmm*1000,voltage2/r*1000,voltage2/Rdmm*1000+voltage2/r*1000, (v250-voltage2)/Rtest*1000)
-
-
-            valid = 'Error'
-            if (valid1 and ( R > Rdmm or r>=minIsolationR)): valid = 'OK'
-            s2 = f"{pin37A:02d}H,{pin37B:02d}H -/- {pin44:02d}H {valid}   {EngNumber(r)}ohm   {EngNumber(voltage2/r)}A leakage  {voltage1:.2f}|{voltage2:.2f} v   ({expected1:.2f}|{expected2:.2f})v "
-            if R > Rdmm:
-                s2 = f"{pin37A:02d}H,{pin37B:02d}H -/- {pin44:02d}H {valid}   HI ohm    - A leakage  {voltage1:.2f}|{voltage2:.2f} v   ({expected1:.2f}|{expected2:.2f})v "
-            fileWrite(file, s2 + "\n")
+            s2 =  f"Power supply voltage: {v250:.3f} v"
+            fileWrite(file, s2 + "\n",file2)
             show(s1, s2)
 
-            chOpen(2, pin44)
+            # 250V to HI trough RTest on 44 pin module
+            chClose(2, 91)
+            # GND to LO on 44 pin module
+            chClose(2, 93)
 
-            if valid1 and r>=minIsolationR:
-                goodWires.append([pin37A, pin37B, pin44,r])
-            else:
-                badWires.append([pin37A, pin37B, pin44,r])
+            Vdmm = read(2)
+            Rdmm = -Vdmm * Rtest/( Vdmm - v250)
+
+            s2 = f"Rtest: {EngNumber(Rtest)}ohm"
+            fileWrite(file, s2 + "\n",file2)
+            show(s1, s2)
+
+
+            s2 =  f"Voltage after Rtest: {EngNumber(Vdmm)}v"
+            fileWrite(file, s2 + "\n",file2)
+            show(s1, s2)
+
+
+            s2 =  f"DMM input impedance: {EngNumber(Rdmm)}ohm"
+            fileWrite(file, s2 + "\n",file2)
+            show(s1, s2)
+
+
+            # GND to HI on 37 pin module
+            chClose(1, 90)
+            # GND to LO on 37 pin module
+            chClose(1, 93)
+            # 250V to HI on 44 pin module
+
+
+            goodWires = []
+            badWires = []
+
+            n = 1
+            for row in channelTable:
+                s1 = f"HiPot ({n}/{len(channelTable)})"
+                fileWrite(file, "\n" + s1 + "\n",file2)
+
+                pin44 = row[0]
+                pin37A = row[1]
+                pin37B = row[2]
+
+                '''# 250V to HI directly on 44 pin module
+                chClose(2, 90)
+                # GND to LO on 44 pin module
+                chClose(2, 93)
+                time.sleep(1)
+                v250 = read(2)
+                # 250V to HI on 44 pin module
+                chOpen(2, 90)'''
+
+                # Close all 37 pins module channels
+                closeArray = []
+                for row2 in channelTable:
+                    pin37A2 = row2[1]
+                    pin37B2 = row2[2]
+                    closeArray.append(pin37A2)
+                    closeArray.append(pin37B2)
+                chClose(1, closeArray)
+
+                # Open the 37 pins module channels that correspond to the pair of wires beeing tested
+                chOpen(1, [pin37A, pin37B])
+
+                # Close the 44 pins channel
+                chClose(2, pin44)
+
+                valid1, voltage1, expected1 = read(1, v0)
+                valid2, voltage2, expected2 = read(2, v250)
+
+                #input("Press Enter to continue...")
+
+                R = -(Rtest * voltage2) / (voltage2 - v250)
+                r = - (R * Rdmm) / ( R - Rdmm  )
+
+
+                fileWrite(file2,f"v250={v250}, Vdmm={Vdmm}, voltage2={voltage2}")
+                fileWrite(file2,f"Rdmm={Rdmm}, R={R}, r={r}")
+                fileWrite(file2,f"voltage2/Rdmm*1000={voltage2/Rdmm*1000}, voltage2/r*10000={voltage2/r*1000}, voltage2/Rdmm*1000+voltage2/r*1000={voltage2/Rdmm*1000+voltage2/r*1000}, v250-voltage2)/Rtest*1000={(v250-voltage2)/Rtest*1000}")
+
+                valid = 'Error'
+                if (valid1 and ( R > Rdmm or r>=minIsolationR)): valid = 'OK'
+                s2 = f"{pin37A:02d}H,{pin37B:02d}H -/- {pin44:02d}H {valid}   {EngNumber(r)}ohm   {EngNumber(voltage2/r)}A leakage  {voltage1:.2f}|{voltage2:.2f} v   ({expected1:.2f}|{expected2:.2f})v "
+                if R > Rdmm:
+                    s2 = f"{pin37A:02d}H,{pin37B:02d}H -/- {pin44:02d}H {valid}   HI ohm    - A leakage  {voltage1:.2f}|{voltage2:.2f} v   ({expected1:.2f}|{expected2:.2f})v "
+                fileWrite(file, s2 + "\n",file2)
+                show(s1, s2)
+
+                chOpen(2, pin44)
+
+                if valid1 and r>=minIsolationR:
+                    goodWires.append([pin37A, pin37B, pin44,r])
+                else:
+                    badWires.append([pin37A, pin37B, pin44,r])
+                    errorBeep()
+
+                n += 1
+
+            fileWrite(file, "\n-----------------------------------------------------------------------------------\n",file2)
+            if len(badWires) > 0:
+                show("$BHiPot. FAILED!", f"$B{len(badWires)} of {len(channelTable)} pairs are bad!")
                 errorBeep()
+                errorBeep()
+                fileWrite(file, "\n---> Hi-Pot Test FAILED!\n\n",file2)
+                fileWrite(file, f"{len(goodWires)} of {len(channelTable)} pairs of wires passed the Hi-Pot Test\n",file2)
 
-            n += 1
+                fileWrite(file, f"These pair of wires passed:\n\n",file2)
+                fileWrite(file, f"pin37A\tpin37B\t\tpin47\t\t \n",file2)
+                fileWrite(file, f"------\t------\t\t-----\t\t---------\n",file2)
+                for pair in goodWires:
+                    fileWrite(file, f"CH{pair[0]}H\tCH{pair[1]}H\t\tCH{pair[2]}H\t\t{EngNumber(pair[3])}ohm\n",file2)
 
-        fileWrite(file, "\n-----------------------------------------------------------------------------------\n")
-        if len(badWires) > 0:
-            show("$BHiPot. FAILED!", f"$B{len(badWires)} of {len(channelTable)} pairs are bad!")
-            errorBeep()
-            errorBeep()
-            fileWrite(file, "\n---> Hi-Pot Test FAILED!\n\n")
-            fileWrite(file, f"{len(goodWires)} of {len(channelTable)} pairs of wires passed the Hi-Pot Test\n")
+                fileWrite(file, f"\nThese pair of wires failed:\n\n",file2)
+                fileWrite(file, f"pin37A\tpin37B\t\tpin47\t\t \n",file2)
+                fileWrite(file, f"------\t------\t\t-----\t\t---------\n",file2)
+                for pair in badWires:
+                    fileWrite(file, f"CH{pair[0]}H\tCH{pair[1]}H\t\tCH{pair[2]}H\t\t{EngNumber(pair[3])}ohm\n",file2)
+                result = False
+            else:
+                show("HiPot. PASSED!", f"{len(goodWires)} of {len(channelTable)} pairs are good")
+                successBeep()
+                fileWrite(file, "\n---> Hi-Pot Test PASSED!\n\n",file2)
+                fileWrite(file, f"{len(goodWires)} of {len(channelTable)} pairs of wires passed the Hi-Pot Test\n\n",file2)
 
-            fileWrite(file, f"These pair of wires passed:\n\n")
-            fileWrite(file, f"pin37A\tpin37B\t\tpin47\t\t \n")
-            fileWrite(file, f"------\t------\t\t-----\t\t---------\n")
-            for pair in goodWires:
-                fileWrite(file, f"CH{pair[0]}H\tCH{pair[1]}H\t\tCH{pair[2]}H\t\t{EngNumber(pair[3])}ohm\n")
+                fileWrite(file, f"pin37A\tpin37B\t\tpin47\t\t \n",file2)
+                fileWrite(file, f"------\t------\t\t-----\t\t---------\n",file2)
+                for pair in goodWires:
+                    fileWrite(file, f"CH{pair[0]}H\tCH{pair[1]}H\t\tCH{pair[2]}H\t\t{EngNumber(pair[3])}ohm\n",file2)
 
-            fileWrite(file, f"\nThese pair of wires failed:\n\n")
-            fileWrite(file, f"pin37A\tpin37B\t\tpin47\t\t \n")
-            fileWrite(file, f"------\t------\t\t-----\t\t---------\n")
-            for pair in badWires:
-                fileWrite(file, f"CH{pair[0]}H\tCH{pair[1]}H\t\tCH{pair[2]}H\t\t{EngNumber(pair[3])}ohm\n")
-            result = False
-        else:
-            show("HiPot. PASSED!", f"{len(goodWires)} of {len(channelTable)} pairs are good")
-            successBeep()
-            fileWrite(file, "\n---> Hi-Pot Test PASSED!\n\n")
-            fileWrite(file, f"{len(goodWires)} of {len(channelTable)} pairs of wires passed the Hi-Pot Test\n\n")
+                result = True
 
-            fileWrite(file, f"pin37A\tpin37B\t\tpin47\t\t \n")
-            fileWrite(file, f"------\t------\t\t-----\t\t---------\n")
-            for pair in goodWires:
-                fileWrite(file, f"CH{pair[0]}H\tCH{pair[1]}H\t\tCH{pair[2]}H\t\t{EngNumber(pair[3])}ohm\n")
-
-            result = True
-
-        fileWrite(file, "\n\n")
-        return result
+            fileWrite(file, "\n\n",file2)
+            return result
 
 def pinoutTest():
     i = datetime.now()
@@ -631,9 +628,11 @@ def show(string1, string2='',c_print=False):
         print(string2.replace("$B",""))
 
 
-def fileWrite(file, string):
+def fileWrite(file, string, file2=None):
     file.write(string)
     print(string, end='')
+    if file2 is not None:
+        file2.write(string)
 
 
 def errorBeep():
