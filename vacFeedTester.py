@@ -364,8 +364,8 @@ def hiPotTest():
                 r = - (R * Rdmm) / ( R - Rdmm  )
 
 
-                fileWrite(file2,f"v250={v250}, Vdmm={Vdmm}, voltage2={voltage2}")
-                fileWrite(file2,f"Rdmm={Rdmm}, R={R}, r={r}")
+                fileWrite(file2,f"v0={v0}, voltage1={voltage1}, valid1={valid1},v250={v250},voltage2={voltage2}, valid2={valid2}")
+                fileWrite(file2,f"Vdmm={Vdmm}, Rdmm={Rdmm}, R={R}, r={r}")
                 fileWrite(file2,f"voltage2/Rdmm*1000={voltage2/Rdmm*1000}, voltage2/r*10000={voltage2/r*1000}, voltage2/Rdmm*1000+voltage2/r*1000={voltage2/Rdmm*1000+voltage2/r*1000}, v250-voltage2)/Rtest*1000={(v250-voltage2)/Rtest*1000}")
 
                 valid = 'Error'
@@ -378,7 +378,7 @@ def hiPotTest():
 
                 chOpen(2, pin44)
 
-                if valid1 and r>=minIsolationR:
+                if valid1 and ( R > Rdmm or r>=minIsolationR):
                     goodWires.append([pin37A, pin37B, pin44,r])
                 else:
                     badWires.append([pin37A, pin37B, pin44,r])
@@ -554,17 +554,10 @@ def readCsv(filePath):
 
 
 def read(slot, expected=None, tolerance=0.05):
-    # expected = 0
-    # tolerance = 1
-
 
     chClose(slot, 911)
 
-
-    #time.sleep(0.5)
-
     read = (instr.ask('print(dmm.measure())'))
-    # instr.write("beeper.beep(0.1, 2400)")
     value = float(read)
     checkError()
     chOpen(slot, 911)
